@@ -3,9 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
+  <style>
+    #chat {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      z-index: 9999;
+      width: 350px;
+      max-height: 500px;
+      /* Tambahan agar tidak menutupi chart */
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+    }
+  </style>
 </head>
 <body>
-  <div style="z-index: 999;" id="chat"></div>
+  <div id="chat"></div>
 
   <script type="module">
     import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
