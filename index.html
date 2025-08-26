@@ -4,6 +4,11 @@
   <meta charset="UTF-8">
   <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
   <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent !important; /* <– ini bikin iframe transparan */
+    }
     #chat {
       position: fixed;
       bottom: 24px;
@@ -11,8 +16,8 @@
       z-index: 9999;
       width: 350px;
       max-height: 500px;
-      /* Tambahan agar tidak menutupi chart */
       box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      background: transparent !important; /* bubble juga transparan */
     }
   </style>
 </head>
