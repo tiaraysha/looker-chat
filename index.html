@@ -33,7 +33,7 @@
     });
 
     window.addEventListener('message', function(event) {
-      if (event.data === 'chat-minimized') {
+      if (event.data === 'chat') {
         const chatWidget = document.querySelector('.chat');
         if (chatWidget) {
           chatWidget.style.display = 'none';
