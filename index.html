@@ -9,7 +9,7 @@
       padding: 0;
       background: transparent !important; 
     }
-    #chat {
+    /* #chat {
       position: fixed;
       bottom: 24px;
       right: 24px;
@@ -18,6 +18,9 @@
       max-height: 500px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.2);
       background: transparent !important; 
+    } */
+    .chat-window {
+      z-index: 9999;
     }
     
   </style>
@@ -32,9 +35,9 @@
       target: '#chat'
     });
 
-   document.querySelector('.chat-widget-minimize-button').addEventListener('click', function() {
-  document.querySelector('.chat-widget').style.display = 'none';
-});
+//   document.querySelector('.chat-window-wrapper.n8n-chat').addEventListener('click', function() {
+//   document.querySelector('.chat-window-wrapper.n8n-chat').style.display = 'none';
+// });
   </script>
   
 </body>
