@@ -32,14 +32,9 @@
       target: '#chat'
     });
 
-    window.addEventListener('message', function(event) {
-      if (event.data === 'chat') {
-        const chatWidget = document.querySelector('.chat');
-        if (chatWidget) {
-          chatWidget.style.display = 'none';
-        }
-      }
-    });
+   document.querySelector('.chat-widget-minimize-button').addEventListener('click', function() {
+  document.querySelector('.chat-widget').style.display = 'none';
+});
   </script>
   
 </body>
