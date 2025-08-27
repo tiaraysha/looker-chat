@@ -7,7 +7,7 @@
     html, body {
       margin: 0;
       padding: 0;
-      background: transparent !important; /* <– ini bikin iframe transparan */
+      background: transparent !important; 
     }
     #chat {
       position: fixed;
@@ -17,19 +17,30 @@
       width: 350px;
       max-height: 500px;
       box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-      background: transparent !important; /* bubble juga transparan */
+      background: transparent !important; 
     }
+    
   </style>
 </head>
 <body>
   <div id="chat"></div>
 
-  <script type="module">
+    <script type="module">
     import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
     createChat({
       webhookUrl: 'https://n8n.starcore.co.id/webhook/data-pegawai',
       target: '#chat'
     });
+
+    window.addEventListener('message', function(event) {
+      if (event.data === 'chat-minimized') {
+        const chatWidget = document.querySelector('.chat');
+        if (chatWidget) {
+          chatWidget.style.display = 'none';
+        }
+      }
+    });
   </script>
+  
 </body>
 </html>
