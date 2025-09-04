@@ -1,67 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <title>Custom n8n Chat</title>
   <link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
   <style>
     html, body {
       margin: 0;
       padding: 0;
-      background: transparent !important; 
-      z-index: 9999;
+      background: transparent !important;
     }
     #chat {
-  position: fixed;
-  bottom: 24px;
-  right: 24px;
-  width: 350px;
-  height: 500px; /* batasi tinggi chat box */
-  box-shadow: 0 2px 12px rgba(0,0,0,0.2);
-  background: white; /* biar jelas area chat */
-  border-radius: 12px;
-  overflow: hidden;
-  z-index: 9999;
-}
-
-/* Batasi tinggi window isi chat */
-.chat-window-wrapper.n8n-chat {
-  height: 100% !important;
-  max-height: 100% !important;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Bagian pesan biar bisa scroll */
-.n8n-chat-messages {
-  flex: 1 1 auto;
-  overflow-y: auto !important;
-  padding: 8px;
-}
-
-/* Input box tetap kecil */
-.n8n-chat-input textarea {
-  height: 40px !important;
-  max-height: 40px !important;
-  overflow-y: auto !important;
-  resize: none !important;
-}
-
-    
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      width: 350px;
+      height: 500px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+      border-radius: 12px;
+      overflow: hidden;
+      z-index: 9999;
+    }
+    .chat-window-wrapper.n8n-chat {
+      height: 100% !important;
+      max-height: 100% !important;
+      display: flex;
+      flex-direction: column;
+    }
+    .n8n-chat-messages {
+      flex: 1 1 auto;
+      overflow-y: auto !important;
+      padding: 8px;
+    }
+    /* Input box tetap kecil */
+    .n8n-chat-input textarea {
+      height: 40px !important;
+      max-height: 40px !important;
+      overflow-y: auto !important;
+      resize: none !important;
+    }
   </style>
+
+  <!-- MathJax config -->
+  <script>
+    window.MathJax = {
+      tex: { 
+        inlineMath: [["$", "$"], ["\\(", "\\)"]],
+        displayMath: [["\\[", "\\]"]]
+      },
+      svg: { fontCache: "global" }
+    };
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </head>
 <body>
   <div id="chat"></div>
 
-<link href="https://cdn.jsdelivr.net/npm/@n8n/chat/dist/style.css" rel="stylesheet" />
-<script type="module">
-	import { createChat } from 'https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js';
+  <script type="module">
+    import { createChat } from "https://cdn.jsdelivr.net/npm/@n8n/chat/dist/chat.bundle.es.js";
 
-	createChat({
-		webhookUrl: 'https://n8n.starcore.co.id/webhook/sheet',
-		target: '#chat',
-    mode: 'fullscreen'
-	});
-</script>
-  
+    createChat({
+      webhookUrl: "https://n8n.starcore.co.id/webhook/sheet",
+      target: "#chat",
+      mode: "fullscreen",
+      window: {
+        renderHtmlInBotResponses: true
+      },
+      onMessage: (msg) => {
+        // Render ulang MathJax setiap ada message baru
+        if (window.MathJax) {
+          MathJax.typesetPromise();
+        }
+      }
+    });
+  </script>
 </body>
 </html>

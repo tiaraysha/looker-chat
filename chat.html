@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Custom n8n Chat UI</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background: transparent;
+      }
+
+      #chat {
+        position: fixed;
+        bottom: 24px;
+        right: 24px;
+        width: 350px;
+        height: 500px;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+        background: #f9f9f9;
+        z-index: 9999;
+        transition: transform 0.3s ease;
+      }
+
+      #messages {
+        flex: 1;
+        padding: 16px;
+        overflow-y: auto;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .message {
+        max-width: 85%;
+        padding: 12px 16px;
+        border-radius: 20px;
+        word-wrap: break-word;
+        line-height: 1.5;
+        animation: fadeIn 0.3s ease-out;
+      }
+
+      .bot {
+        background: #e5e5ea;
+        color: #333;
+        align-self: flex-start;
+        border-bottom-left-radius: 4px;
+      }
+
+      .user {
+        background: #007aff;
+        color: white;
+        align-self: flex-end;
+        border-bottom-right-radius: 4px;
+      }
+
+      #input-container {
+        display: flex;
+        align-items: center;
+        padding: 8px 16px;
+        border-top: 1px solid #ddd;
+        background: white;
+      }
+
+      #input-container textarea {
+        flex: 1;
+        padding: 12px;
+        border: 1px solid #ddd;
+        border-radius: 24px;
+        resize: none;
+        height: 48px;
+        box-sizing: border-box;
+        font-size: 14px;
+        margin-right: 8px;
+        transition: border-color 0.2s;
+      }
+
+      #input-container textarea:focus {
+        outline: none;
+        border-color: #007aff;
+      }
+
+      #input-container button {
+        width: 48px;
+        height: 48px;
+        border: none;
+        background: #007aff;
+        color: white;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s, transform 0.2s;
+      }
+
+      #input-container button:hover {
+        background: #005bb5;
+      }
+
+      #input-container button:active {
+        transform: scale(0.95);
+      }
+      
+      .loading-dots {
+        display: flex;
+        align-items: center;
+      }
+
+      .loading-dots span {
+        width: 8px;
+        height: 8px;
+        background-color: #333;
+        border-radius: 50%;
+        margin: 0 4px;
+        animation: bounce 1.4s infinite ease-in-out both;
+      }
+
+      .loading-dots span:nth-child(1) {
+        animation-delay: -0.32s;
+      }
+
+      .loading-dots span:nth-child(2) {
+        animation-delay: -0.16s;
+      }
+
+      @keyframes bounce {
+        0%, 80%, 100% {
+          transform: scale(0);
+        }
+        40% {
+          transform: scale(1);
+        }
+      }
+      
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chat">
+      <div id="messages"></div>
+      <div id="input-container">
+        <textarea id="chatInput" placeholder="Type your question..."></textarea>
+        <button id="sendBtn">➤</button>
+      </div>
+    </div>
+
+    <script>
+      const messagesDiv = document.getElementById("messages");
+      const chatInput = document.getElementById("chatInput");
+      const sendBtn = document.getElementById("sendBtn");
+
+      function addMessage(text, sender, isHtml = false) {
+        const msg = document.createElement("div");
+        msg.className = "message " + sender;
+        
+        if (isHtml) {
+          msg.innerHTML = text;
+        } else {
+          msg.textContent = text;
+        }
+
+        messagesDiv.appendChild(msg);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        if (window.MathJax) {
+          MathJax.typesetPromise([msg]).catch((err) =>
+            console.error("MathJax render error:", err)
+          );
+        }
+        return msg;
+      }
+
+      sendBtn.addEventListener("click", () => {
+        const input = chatInput.value.trim();
+        if (!input) return;
+        
+        addMessage(input, "user");
+        chatInput.value = "";
+        
+        chatInput.disabled = true;
+        sendBtn.disabled = true;
+
+        // ini loading
+        const loadingMessage = addMessage('<div class="loading-dots"><span></span><span></span><span></span></div>', "bot", true);
+
+        fetch("https://n8n.starcore.co.id/webhook/sheet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: input }),
+        })
+          .then(async (res) => {
+            if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+            }
+            return await res.text();
+          })
+          .then((data) => {
+            messagesDiv.removeChild(loadingMessage);
+
+            if (!data) {
+              addMessage("Nothing found", "bot");
+            } else {
+              addMessage(data, "bot", true);
+            }
+          })
+          .catch((err) => {
+            console.error(err);
+            messagesDiv.removeChild(loadingMessage);
+            addMessage(`Error: ${err.message}. Please try again.`, "bot");
+          })
+          .finally(() => {
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            chatInput.focus();
+          });
+      });
+      
+      chatInput.addEventListener('keypress', (e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              sendBtn.click();
+          }
+      });
+      
+      chatInput.addEventListener('input', () => {
+          chatInput.style.height = 'auto';
+          chatInput.style.height = chatInput.scrollHeight + 'px';
+      });
+
+    </script>
+
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [["\\[", "\\]"]],
+        },
+        svg: { fontCache: "global" },
+      };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  </body>
+</html>
