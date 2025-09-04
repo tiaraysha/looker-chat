@@ -4,8 +4,49 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Document</title>
+
+    <style>
+      /* Styling dasar untuk tabel */
+      table {
+        border-collapse: collapse;
+        width: 100%;
+        margin-top: 10px;
+      }
+
+      th,
+      td {
+        border: 1px solid #ccc;
+        padding: 8px;
+        text-align: left;
+      }
+
+      /* Styling opsional untuk responsif */
+      @media (max-width: 600px) {
+        table,
+        thead,
+        tbody,
+        th,
+        td,
+        tr {
+          display: block;
+          width: 100%;
+        }
+        th {
+          background-color: #f0f0f0;
+        }
+      }
+
+      .chatbot-response {
+        font-family: "Courier New", monospace;
+        white-space: pre-wrap;
+      }
+    </style>
   </head>
   <body>
-    <script src="https://wembly.app/embed.js" data-widget-id="a4b761d2-9010-4eaa-b73d-81f80d35ec55" defer></script>
+    <script
+      src="https://wembly.app/embed.js"
+      data-widget-id="a4b761d2-9010-4eaa-b73d-81f80d35ec55"
+      defer
+    ></script>
   </body>
 </html>
