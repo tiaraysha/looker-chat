@@ -40,6 +40,18 @@
         font-family: "Courier New", monospace;
         white-space: pre-wrap;
       }
+
+      /* Tambahan supaya chatbot ga nutup chart */
+      iframe[src*="wembly.app"] {
+        position: fixed !important;
+        bottom: 20px !important;
+        right: 20px !important;
+        width: 350px !important;
+        height: 500px !important;
+        z-index: 9999 !important;
+        border: none !important;
+        background: transparent !important;
+      }
     </style>
   </head>
   <body>
