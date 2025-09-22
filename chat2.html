@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="stylesheet" href="style.css" />
+    <title>Modern n8n Chat UI</title>
+  </head>
+  <body>
+    <div id="chat">
+      <div id="messages"></div>
+      <div id="input-container">
+        <textarea id="chatInput" placeholder="Type your question..."></textarea>
+        <button id="fileBtn" title="Attach file">📎</button>
+        <input type="file" id="fileInput" accept="/" />
+        <button id="voiceBtn" title="Voice input">🎤</button>
+        <button id="sendBtn" title="Send message">➤</button>
+      </div>
+    </div>
+
+    <script>
+      const messagesDiv = document.getElementById("messages");
+      const chatInput = document.getElementById("chatInput");
+      const sendBtn = document.getElementById("sendBtn");
+      const fileBtn = document.getElementById("fileBtn");
+      const fileInput = document.getElementById("fileInput");
+      const voiceBtn = document.getElementById("voiceBtn");
+
+      let pendingFile = null;
+      let pendingFilePreview = null;
+      let pendingFileBase64 = null;
+
+      function addMessage(text, sender, isHtml = false) {
+        const msg = document.createElement("div");
+        msg.className = "message " + sender;
+        if (isHtml) {
+          msg.innerHTML = text;
+        } else {
+          msg.textContent = text;
+        }
+
+        // Add timestamp
+        const timestamp = document.createElement("div");
+        timestamp.className = "timestamp";
+        timestamp.textContent = new Date().toLocaleTimeString([], {
+          hour: "2-digit",
+          minute: "2-digit",
+        });
+        msg.appendChild(timestamp);
+
+        messagesDiv.appendChild(msg);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+        if (window.MathJax) {
+          MathJax.typesetPromise([msg]).catch((err) =>
+            console.error("MathJax render error:", err)
+          );
+        }
+
+        return msg;
+      }
+
+      function previewFile(file) {
+        if (pendingFilePreview) {
+          messagesDiv.removeChild(pendingFilePreview);
+          pendingFilePreview = null;
+        }
+
+        const msg = document.createElement("div");
+        msg.className = "message user pending";
+
+        if (file.type.startsWith("image/")) {
+          const img = document.createElement("img");
+          img.src = URL.createObjectURL(file);
+          img.style.maxWidth = "150px";
+          img.style.borderRadius = "8px";
+          msg.appendChild(img);
+        } else if (file.type.startsWith("audio/")) {
+          const audio = document.createElement("audio");
+          audio.controls = true;
+          audio.src = URL.createObjectURL(file);
+          msg.appendChild(audio);
+        } else {
+          const icon = document.createElement("div");
+          icon.textContent = "📄";
+          icon.style.fontSize = "28px";
+          msg.appendChild(icon);
+        }
+
+        messagesDiv.appendChild(msg);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        pendingFilePreview = msg;
+      }
+
+      function sendMessage() {
+        const input = chatInput.value.trim();
+        if (!input && !pendingFile) return;
+
+        if (input) addMessage(input, "user");
+
+        chatInput.value = "";
+        chatInput.disabled = true;
+        sendBtn.disabled = true;
+        fileBtn.disabled = true;
+        voiceBtn.disabled = true;
+
+        const loadingMessage = addMessage(
+          '<div class="loading-dots"><span></span><span></span><span></span></div>',
+          "bot",
+          true
+        );
+
+        const formData = new FormData();
+        if (input) formData.append("message", input);
+
+        if (pendingFile) {
+          formData.append("file", pendingFile, pendingFile.name);
+        }
+
+        if (pendingFileBase64) {
+          formData.append("file_base64", pendingFileBase64);
+          formData.append(
+            "file_name",
+            pendingFile ? pendingFile.name : "audio.mp3"
+          );
+          formData.append(
+            "file_type",
+            pendingFile ? pendingFile.type : "audio/mpeg"
+          );
+        }
+
+        if (pendingFilePreview) {
+          pendingFilePreview.classList.remove("pending");
+        }
+
+        pendingFile = null;
+        pendingFilePreview = null;
+        pendingFileBase64 = null;
+
+        fetch("https://n8n.starcore.co.id/webhook/fitofarmaka-maps", {
+          method: "POST",
+          body: formData,
+        })
+          .then(async (res) => {
+            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+            return await res.text();
+          })
+          .then((data) => {
+            messagesDiv.removeChild(loadingMessage);
+            addMessage(data || "Nothing found", "bot", true);
+          })
+          .catch((err) => {
+            console.error(err);
+            messagesDiv.removeChild(loadingMessage);
+            addMessage(`Error: ${err.message}`, "bot");
+          })
+          .finally(() => {
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            fileBtn.disabled = false;
+            voiceBtn.disabled = false;
+            chatInput.focus();
+          });
+      }
+
+      sendBtn.addEventListener("click", sendMessage);
+      fileBtn.addEventListener("click", () => fileInput.click());
+
+      fileInput.addEventListener("change", () => {
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        pendingFile = file;
+
+        if (file.type.startsWith("audio/")) {
+          const reader = new FileReader();
+          reader.onload = function (evt) {
+            const dataUrl = evt.target.result;
+            const commaIndex = dataUrl.indexOf(",");
+            pendingFileBase64 =
+              commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+          };
+          reader.readAsDataURL(file);
+        } else {
+          pendingFileBase64 = null;
+        }
+
+        previewFile(file);
+        fileInput.value = "";
+      });
+
+      chatInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+
+      let mediaRecorder;
+      let audioChunks = [];
+      let isRecording = false;
+
+      voiceBtn.addEventListener("click", async () => {
+        if (!isRecording) {
+          // Mulai rekam
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: true,
+            });
+            mediaRecorder = new MediaRecorder(stream);
+
+            audioChunks = [];
+            mediaRecorder.ondataavailable = (e) => {
+              if (e.data.size > 0) audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = () => {
+              const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
+              const file = new File([audioBlob], "voice-note.webm", {
+                type: "audio/webm",
+              });
+
+              pendingFile = file;
+
+              // Convert ke Base64 supaya gampang kirim
+              const reader = new FileReader();
+              reader.onload = function (evt) {
+                const dataUrl = evt.target.result;
+                const commaIndex = dataUrl.indexOf(",");
+                pendingFileBase64 =
+                  commaIndex >= 0 ? dataUrl.slice(commaIndex + 1) : dataUrl;
+              };
+              reader.readAsDataURL(file);
+
+              previewFile(file); // tampilkan di chat sebagai player
+            };
+
+            mediaRecorder.start();
+            isRecording = true;
+            voiceBtn.textContent = "🛑"; // ubah icon jadi stop
+          } catch (err) {
+            console.error("Mic error:", err);
+            alert("Tidak bisa akses microphone: " + err.message);
+          }
+        } else {
+          // Stop rekaman
+          mediaRecorder.stop();
+          isRecording = false;
+          voiceBtn.textContent = "🎤";
+        }
+      });
+
+      // Jika perlu re-render saat ukuran berubah (opsional)
+      window.addEventListener("resize", () => {
+        if (window.MathJax) {
+          MathJax.startup.document.state(100);
+          MathJax.startup.document.render();
+        }
+      });
+
+      // Detect provider and apply appropriate theme class
+      function detectProvider() {
+        if (window.location.href.includes("web.whatsapp")) {
+          document.body.classList.add("whatsapp-theme");
+        } else if (window.location.href.includes("web.telegram")) {
+          document.body.classList.add("telegram-theme");
+        } else if (window.location.href.includes("messenger.com")) {
+          document.body.classList.add("messenger-theme");
+        }
+      }
+
+      // Run detection on load
+      window.addEventListener("load", detectProvider);
+    </script>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["\\[", "\\]"],
+            ["[", "]"],
+          ],
+        },
+        svg: {
+          fontCache: "global",
+          // Tambahkan baris ini untuk memecah baris otomatis
+          linebreaks: { automatic: true, width: "90% container" },
+        },
+      };
+    </script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"
+    ></script>
+  </body>
+</html>

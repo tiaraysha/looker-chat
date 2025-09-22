@@ -157,6 +157,22 @@
         background: #f1f1f1;
       }
 
+      .message.bot {
+        overflow-wrap: break-word;
+        word-break: break-word;
+      }
+
+      .message.bot mjx-container {
+        display: block !important;
+        text-align: left;
+        margin: 8px 0 !important;
+        max-width: 100% !important; /* jangan lebih lebar dari bubble */
+        overflow-x: auto !important; /* kalau tetap kepanjangan, bisa di-scroll */
+        white-space: normal !important; /* biar wrap */
+        box-sizing: border-box;
+        font-size: smaller !important; /* sedikit lebih kecil */
+      }
+
       @keyframes bounce {
         0%,
         80%,
@@ -232,7 +248,7 @@
           true
         );
 
-        fetch("https://n8n.starcore.co.id/webhook/sheet", {
+        fetch("https://n8n.starcore.co.id/webhook/fitofarmaka-maps", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ message: input }),
@@ -275,6 +291,19 @@
         chatInput.style.height = "auto";
         chatInput.style.height = chatInput.scrollHeight + "px";
       });
+
+      // Setelah menambahkan pesan baru
+      if (window.MathJax) {
+        MathJax.typesetPromise([msgElement]).catch((err) => console.error(err));
+      }
+
+      // Jika perlu re-render saat ukuran berubah (opsional)
+      window.addEventListener("resize", () => {
+        if (window.MathJax) {
+          MathJax.startup.document.state(100);
+          MathJax.startup.document.render();
+        }
+      });
     </script>
 
     <script>
@@ -284,11 +313,21 @@
             ["$", "$"],
             ["\\(", "\\)"],
           ],
-          displayMath: [["\\[", "\\]"]],
+          displayMath: [
+            ["\\[", "\\]"],
+            ["[", "]"],
+          ],
         },
-        svg: { fontCache: "global" },
+        svg: {
+          fontCache: "global",
+          // Tambahkan baris ini untuk memecah baris otomatis
+          linebreaks: { automatic: true, width: "90% container" },
+        },
       };
     </script>
-    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+    <script
+      defer
+      src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js"
+    ></script>
   </body>
 </html>
